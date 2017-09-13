@@ -1,5 +1,22 @@
 <?php
 
+// Transparent session handler.
+// Licenced under the AGPLv3 or higher
+// Copyright (c) 2017 Rob Thomas <xrobau@linux.com>
+//
+// Usage:
+//   define MYSQLHOST, MYSQLUSER and MYSQLPASS (and optionally MYSQLDBNAME)
+//   $s = new \xrobau\Session();
+//
+// Nothing else is required. After that, you can simply proceed as per normal
+//
+//   session_create();
+//   $_SESSION['test'] = 'foo';
+//   session_close();
+//
+// No code changes are needed apart from the defines and creating the object
+// (which simply registers the handler)
+
 namespace xrobau;
 
 class Session {
@@ -109,7 +126,7 @@ class Session {
 	public function session_write($id, $data){
 		static $prep;
 		if (!$prep) {
-			$prep = $this->db->prepare('INSERT INTO `'.$this->dbname.'` (`id`, `access`, `data`) VALUES (?, ?, ?) ON DUPLICATE KEY
+			$prep = self::$db->prepare('INSERT INTO `'.$this->dbname.'` (`id`, `access`, `data`) VALUES (?, ?, ?) ON DUPLICATE KEY
 				UPDATE `access` = ?, `data` = ?');
 		}
 
@@ -123,7 +140,7 @@ class Session {
 	public function session_destroy($id) {
 		static $prep;
 		if (!$prep) {
-			$prep = $this->db->prepare('DELETE FROM `'.$this->dbname.'` WHERE `id` = ?');
+			$prep = self::$db->prepare('DELETE FROM `'.$this->dbname.'` WHERE `id` = ?');
 		}
 		$prep->execute([$id]);
 		return true;
@@ -138,11 +155,10 @@ class Session {
 	public function session_gc($lifetime) {
 		static $prep;
 		if (!$prep) {
-			$prep = $this->db->prepare('DELETE FROM `'.$this->dbname.'` WHERE `access` < ?');
+			$prep = self::$db->prepare('DELETE FROM `'.$this->dbname.'` WHERE `access` < ?');
 		}
 		$prep->execute([ time() - $lifetime ]);
 		return true;
 	}
-
 }
 
